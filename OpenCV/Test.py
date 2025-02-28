@@ -6,7 +6,7 @@ mp_holistic = mp.solutions.holistic
 holistic = mp_holistic.Holistic(min_detection_confidence=0.7, min_tracking_confidence=0.7)
 
 # Initialize OpenCV video capture
-cap = cv2.VideoCapture(0)
+cap = cv2.VideoCapture(3)
 
 while True:
     ret, frame = cap.read()
@@ -22,35 +22,63 @@ while True:
     # Process the frame with MediaPipe Holistic
     results = holistic.process(rgb_frame)
 
-    # Draw the left hand landmarks
+    # Draw the hand landmarks
     if results.left_hand_landmarks:
         for i in range(len(results.left_hand_landmarks.landmark)):
             x = int(results.left_hand_landmarks.landmark[i].x * frame.shape[1])
             y = int(results.left_hand_landmarks.landmark[i].y * frame.shape[0])
             cv2.circle(frame, (x, y), 5, (0, 255, 0), -1)
 
-        # Connect the left hand landmarks (for better visualization)
+        # Connect the hand landmarks (for better visualization)
         mp.solutions.drawing_utils.draw_landmarks(frame, results.left_hand_landmarks, mp_holistic.HAND_CONNECTIONS)
 
-    # Draw the left arm and wrist landmarks (using Pose landmarks) up to the elbow
+    if results.right_hand_landmarks:
+        for i in range(len(results.right_hand_landmarks.landmark)):
+            x = int(results.right_hand_landmarks.landmark[i].x * frame.shape[1])
+            y = int(results.right_hand_landmarks.landmark[i].y * frame.shape[0])
+            cv2.circle(frame, (x, y), 5, (0, 255, 0), -1)
+
+        # Connect the hand landmarks (for better visualization)
+        mp.solutions.drawing_utils.draw_landmarks(frame, results.right_hand_landmarks, mp_holistic.HAND_CONNECTIONS)
+
+    # Draw the arm and shoulder landmarks (using Pose landmarks)
     if results.pose_landmarks:
-        # Define the index of relevant points (left wrist, left elbow)
-        wrist_left = results.pose_landmarks.landmark[mp_holistic.PoseLandmark.LEFT_WRIST]
+        # Define the index of relevant points (shoulder, elbow, wrist)
+        shoulder_left = results.pose_landmarks.landmark[mp_holistic.PoseLandmark.LEFT_SHOULDER]
         elbow_left = results.pose_landmarks.landmark[mp_holistic.PoseLandmark.LEFT_ELBOW]
+        wrist_left = results.pose_landmarks.landmark[mp_holistic.PoseLandmark.LEFT_WRIST]
         
+        shoulder_right = results.pose_landmarks.landmark[mp_holistic.PoseLandmark.RIGHT_SHOULDER]
+        elbow_right = results.pose_landmarks.landmark[mp_holistic.PoseLandmark.RIGHT_ELBOW]
+        wrist_right = results.pose_landmarks.landmark[mp_holistic.PoseLandmark.RIGHT_WRIST]
+
         # Convert normalized coordinates to pixel coordinates
-        wrist_left_coords = (int(wrist_left.x * frame.shape[1]), int(wrist_left.y * frame.shape[0]))
+        shoulder_left_coords = (int(shoulder_left.x * frame.shape[1]), int(shoulder_left.y * frame.shape[0]))
         elbow_left_coords = (int(elbow_left.x * frame.shape[1]), int(elbow_left.y * frame.shape[0]))
+        wrist_left_coords = (int(wrist_left.x * frame.shape[1]), int(wrist_left.y * frame.shape[0]))
 
-        # Draw circles for wrist and elbow
-        cv2.circle(frame, wrist_left_coords, 5, (255, 0, 0), -1)
+        shoulder_right_coords = (int(shoulder_right.x * frame.shape[1]), int(shoulder_right.y * frame.shape[0]))
+        elbow_right_coords = (int(elbow_right.x * frame.shape[1]), int(elbow_right.y * frame.shape[0]))
+        wrist_right_coords = (int(wrist_right.x * frame.shape[1]), int(wrist_right.y * frame.shape[0]))
+
+        # Draw circles for shoulder, elbow, and wrist
+        cv2.circle(frame, shoulder_left_coords, 5, (255, 0, 0), -1)
         cv2.circle(frame, elbow_left_coords, 5, (255, 0, 0), -1)
+        cv2.circle(frame, wrist_left_coords, 5, (255, 0, 0), -1)
 
-        # Draw line to represent the left arm connection (wrist -> elbow)
-        cv2.line(frame, wrist_left_coords, elbow_left_coords, (255, 0, 0), 2)
+        cv2.circle(frame, shoulder_right_coords, 5, (0, 0, 255), -1)
+        cv2.circle(frame, elbow_right_coords, 5, (0, 0, 255), -1)
+        cv2.circle(frame, wrist_right_coords, 5, (0, 0, 255), -1)
+
+        # Draw lines to represent arm connections (shoulder -> elbow -> wrist)
+        cv2.line(frame, shoulder_left_coords, elbow_left_coords, (0, 255, 0), 2)
+        cv2.line(frame, elbow_left_coords, wrist_left_coords, (0, 255, 0), 2)
+
+        cv2.line(frame, shoulder_right_coords, elbow_right_coords, (0, 0, 255), 2)
+        cv2.line(frame, elbow_right_coords, wrist_right_coords, (0, 0, 255), 2)
 
     # Display the resulting frame
-    cv2.imshow('Left Hand and Arm (Up to Elbow) Tracking', frame)
+    cv2.imshow('Hand and Arm Tracking', frame)
 
     # Exit on pressing the 'q' key
     if cv2.waitKey(1) & 0xFF == ord('q'):
