@@ -1,12 +1,13 @@
 import cv2
 import mediapipe as mp
+from gpiozero import LED
 
 # Initialize MediaPipe Holistic model
 mp_holistic = mp.solutions.holistic
 holistic = mp_holistic.Holistic(min_detection_confidence=0.7, min_tracking_confidence=0.7)
 
 # Initialize OpenCV video capture
-cap = cv2.VideoCapture(3)
+cap = cv2.VideoCapture(0)
 
 while True:
     ret, frame = cap.read()
@@ -31,12 +32,15 @@ while True:
 
         # Connect the hand landmarks (for better visualization)
         mp.solutions.drawing_utils.draw_landmarks(frame, results.left_hand_landmarks, mp_holistic.HAND_CONNECTIONS)
-
     if results.right_hand_landmarks:
         for i in range(len(results.right_hand_landmarks.landmark)):
             x = int(results.right_hand_landmarks.landmark[i].x * frame.shape[1])
             y = int(results.right_hand_landmarks.landmark[i].y * frame.shape[0])
             cv2.circle(frame, (x, y), 5, (0, 255, 0), -1)
+        if x  < int(frame.shape[1]):
+            LED(15).on()
+        else:
+            LED(15).off()
 
         # Connect the hand landmarks (for better visualization)
         mp.solutions.drawing_utils.draw_landmarks(frame, results.right_hand_landmarks, mp_holistic.HAND_CONNECTIONS)
@@ -79,6 +83,9 @@ while True:
 
     # Display the resulting frame
     cv2.imshow('Hand and Arm Tracking', frame)
+    
+    # LED control
+   
 
     # Exit on pressing the 'q' key
     if cv2.waitKey(1) & 0xFF == ord('q'):
