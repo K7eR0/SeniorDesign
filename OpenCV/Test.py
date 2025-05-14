@@ -37,10 +37,6 @@ while True:
             x = int(results.right_hand_landmarks.landmark[i].x * frame.shape[1])
             y = int(results.right_hand_landmarks.landmark[i].y * frame.shape[0])
             cv2.circle(frame, (x, y), 5, (0, 255, 0), -1)
-        if x  < int(frame.shape[1]):
-            LED(15).on()
-        else:
-            LED(15).off()
 
         # Connect the hand landmarks (for better visualization)
         mp.solutions.drawing_utils.draw_landmarks(frame, results.right_hand_landmarks, mp_holistic.HAND_CONNECTIONS)
