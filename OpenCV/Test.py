@@ -81,7 +81,42 @@ while True:
     cv2.imshow('Hand and Arm Tracking', frame)
     
     # LED control
-   
+    led = LED(15)
+    hand_on_right_side = False # Flag to track hand presence on the right
+
+    if results.right_hand_landmarks:
+        # Get all x-coordinates of the right hand landmarks
+        x_coords = [landmark.x for landmark in results.right_hand_landmarks.landmark]
+
+        if not x_coords: # Should not happen if results.right_hand_landmarks is true, but good practice
+            pass # Or handle error
+        else:
+            # Calculate an average x-coordinate or use a specific landmark
+            # For example, using the average x-coordinate:
+            avg_x_normalized = sum(x_coords) / len(x_coords)
+            avg_x_pixel = int(avg_x_normalized * frame.shape[1])
+
+            # Or, using a specific landmark, e.g., the wrist (landmark 0)
+            # wrist_x_pixel = int(results.right_hand_landmarks.landmark[0].x * frame.shape[1])
+
+            # Define the center of the screen
+            center_x_screen = frame.shape[1] // 2
+
+            # Check if the hand (e.g., its average x-position) is on the right side
+            if avg_x_pixel > center_x_screen: # Or use wrist_x_pixel
+                hand_on_right_side = True
+
+                # Draw landmarks (optional, but you had it)
+                for landmark in results.right_hand_landmarks.landmark:
+                    x = int(landmark.x * frame.shape[1])
+                    y = int(landmark.y * frame.shape[0])
+                    cv2.circle(frame, (x, y), 5, (0, 255, 0), -1)
+
+    # Now, make a single decision for the LED based on the flag
+    if hand_on_right_side:
+        led.on()
+    else:
+        led.off()
 
     # Exit on pressing the 'q' key
     if cv2.waitKey(1) & 0xFF == ord('q'):
