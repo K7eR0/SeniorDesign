@@ -1,6 +1,35 @@
 import cv2
 import mediapipe as mp
-from gpiozero import LED
+# from gpiozero import LED
+import rgpio
+import time
+
+# Replace with the Raspberry Pi 5's IP address
+PI_HOST = '192.168.1.194'
+LED_GPIO = 15 # BCM pin number
+
+try:
+    # Connect to the rgpiod daemon on the Pi 5
+    sbc = rgpio.sbc(PI_HOST, 8889)
+
+    if not sbc.connected:
+        print(f"Failed to connect to {PI_HOST}")
+        exit()
+
+    # Open the default gpiochip (usually 0)
+    # This handle is needed for subsequent GPIO operations
+    chip_handle = sbc.gpiochip_open(0)
+    if chip_handle < 0:
+        print(f"Error opening gpiochip: {chip_handle}")
+        sbc.stop()
+        exit()
+
+    # Claim GPIO for output, initial level 0 (LOW)
+    sbc.gpio_claim_output(chip_handle, LED_GPIO, 0)
+
+except Exception as e:
+    print(f"An error occurred: {e}")
+
 
 # Initialize MediaPipe Holistic model
 mp_holistic = mp.solutions.holistic
@@ -81,7 +110,6 @@ while True:
     cv2.imshow('Hand and Arm Tracking', frame)
     
     # LED control
-    led = LED(15)
     hand_on_right_side = False # Flag to track hand presence on the right
 
     if results.right_hand_landmarks:
@@ -114,9 +142,9 @@ while True:
 
     # Now, make a single decision for the LED based on the flag
     if hand_on_right_side:
-        led.on()
+        sbc.gpio_write(chip_handle, LED_GPIO, 1) # Set GPIO HIGH
     else:
-        led.off()
+        sbc.gpio_write(chip_handle, LED_GPIO, 0) # Set GPIO HIGH
 
     # Exit on pressing the 'q' key
     if cv2.waitKey(1) & 0xFF == ord('q'):
@@ -125,3 +153,13 @@ while True:
 # Release the video capture object and close OpenCV windows
 cap.release()
 cv2.destroyAllWindows()
+
+
+if 'sbc' in locals() and sbc.connected:
+    if 'chip_handle' in locals() and chip_handle >= 0:
+        # Free the GPIO pin
+        sbc.gpio_free(chip_handle, LED_GPIO)
+        # Close the gpiochip
+        sbc.gpiochip_close(chip_handle)
+    # Disconnect from the daemon
+    sbc.stop()
