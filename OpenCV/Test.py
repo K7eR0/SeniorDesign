@@ -5,7 +5,7 @@ from remoteio import *
 import time
 
 # Replace with the Raspberry Pi 5's IP address
-PI_HOST = '192.168.1.194'
+PI_HOST = '192.168.8.145'
 LED_GPIO = 15 # BCM pin number
 
 #led = LED(15)
