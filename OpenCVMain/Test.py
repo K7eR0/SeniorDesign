@@ -4,7 +4,7 @@ import pyfirmata2
 
 board = pyfirmata2.Arduino('COM12')
 
-m1 = board.get_pin()
+#m1 = board.get_pin()
 
 # Initialize MediaPipe Holistic model
 mp_holistic = mp.solutions.holistic
