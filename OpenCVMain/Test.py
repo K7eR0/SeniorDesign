@@ -1,8 +1,5 @@
 import cv2
 import mediapipe as mp
-import pyfirmata2
-
-board = pyfirmata2.Arduino('COM12')
 
 #m1 = board.get_pin()
 
