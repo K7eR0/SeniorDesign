@@ -1,0 +1,31 @@
+#include <Arduino.h>
+#include <AccelStepper.h>
+#include <MultiStepper.h>
+String x;
+int pin;
+void setup() {
+  // put your setup code here, to run once:
+  Serial.begin(115200);
+  Serial.setTimeout(1.5);
+  pinMode(6, OUTPUT);
+  pinMode(2, OUTPUT);
+  pinMode(3, OUTPUT);
+  pinMode(4, OUTPUT);
+  pinMode(5, OUTPUT);
+}
+
+void loop() {
+  // put your main code here, to run repeatedly:
+  while (!Serial.available());
+  x = Serial.readString();
+  pin = x.substring(0, 2).toInt();
+  if (x.substring(3) == "u") {
+    digitalWrite(pin, HIGH);
+    Serial.print(2);
+  }
+  else if (x.substring(3) == "d"){
+    digitalWrite(pin, LOW);
+    Serial.print(3);
+  }
+  x = Serial.readString();
+}
