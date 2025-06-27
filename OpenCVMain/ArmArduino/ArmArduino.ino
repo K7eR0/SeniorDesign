@@ -5,9 +5,8 @@ String x;
 int step = 0;
 AccelStepper stepper1(1,3,2);
 void setup() {
-  // put your setup code here, to run once:
-  Serial.begin(115200);
-  Serial.setTimeout(1.5);
+  Serial.begin(115200); //Start a serial connection with baud rate of 115200
+  Serial.setTimeout(1.5); //Timeout the conenction after 1.5 seconds
   stepper1.setMaxSpeed(200);
   stepper1.setAcceleration(30);
 }
