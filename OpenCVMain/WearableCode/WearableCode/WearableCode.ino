@@ -6,8 +6,8 @@ BLEService IMUService("180F");                                            //Set 
 BLEStringCharacteristic IMUSensorData("2A19", BLERead | BLENotify, 512);  //Set the data characteristics
 void setup() {
 
-  Serial.begin(9600);
-  while (!Serial)
+  //Serial.begin(9600);
+  //while (!Serial)
     ;
 
   if (!IMU.begin()) {
@@ -63,6 +63,7 @@ void loop() {
         package += String(z2,2);
         package += String(" ");
         IMUSensorData.writeValue(package);  // Send data to central
+        delay(205);
         Serial.println(package);
       }
     }
