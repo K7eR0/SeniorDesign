@@ -30,8 +30,8 @@ float step = 0;
 void setup() {
   pinMode(LED, OUTPUT);
   pinMode(LEDSERIAL, OUTPUT);
-  Serial.begin(115200);
-  Serial.setTimeout(200);
+  Serial.begin(2000000);
+  Serial.setTimeout(20);
 }
 
 void loop() {
