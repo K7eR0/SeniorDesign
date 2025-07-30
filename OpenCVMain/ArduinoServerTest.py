@@ -6,21 +6,36 @@ import mediapipe as mp
 import numpy as np
 import queue
 
-uno = serial.Serial(port='COM12',   baudrate=2000000, timeout=0.2) # Start Serial connection with Uno
-nano = serial.Serial(port='COM3',   baudrate=2000000, timeout=0.2) # Start Serial connection with Nano
+uno = serial.Serial(port='COM12',   baudrate=500000 , timeout=0.02) # Start Serial connection with Uno
+nano = serial.Serial(port='COM3',   baudrate=500000 , timeout=0.02) # Start Serial connection with Nano
 
 def ReadNano(package): # Function to receive and process coordinates from nano
-    pack = nano.readline()[:-2].decode() # Decode the message from the nano and remove the new line command
-    # print(package) # Print the message from the nano
-    uno.write(pack.encode())
-    package.put(pack) # Put package into queue 
-
+    while True:
+        try:
+            # Read line, decode, and strip newlines
+            raw_data = nano.readline()
+            if raw_data: # Only process if data was received
+                decoded_data = raw_data.decode('utf-8').strip()
+                if decoded_data: # Only put valid, non-empty data into the queue
+                    package.put(decoded_data)
+            # Small sleep to prevent 100% CPU usage on the thread if data is very sparse
+            # time.sleep(0.001)
+        except serial.SerialException as e:
+            print(f"Serial read error on Nano: {e}")
+            break # Exit thread on critical serial error
+        except UnicodeDecodeError as e:
+            print(f"Unicode decode error on Nano: {e}. Raw data: {raw_data}")
+            # Continue trying to read
+        except Exception as e:
+            print(f"Unexpected error in Nano read thread: {e}")
+            break # Exit thread on unexpected error
     
-package = queue.Queue() # Create queue to store nano value
-while True:     
+def OpenCV(wristX,wristY,elbowX,elbowY,shoulderX,shoulderY):
     mp_drawing = mp.solutions.drawing_utils # Start the drawing utility to draw on top of a frame
     mp_pose = mp.solutions.pose # Start the pose library to detect poses
     cap = cv2.VideoCapture(0) # Start the video capture, change number to change camera
+    cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
+    cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
     with mp_pose.Pose(min_detection_confidence = 0.7, min_tracking_confidence = 0.7) as pose: # Set pose detection confidence and puts a variable pose
         while cap.isOpened(): # While the camera is open
             ret, frame = cap.read() # Store the current frame
@@ -41,23 +56,47 @@ while True:
                 landmarks = (results.pose_landmarks.landmark)
             except:
                 pass
-            
-            #Get message from threaded nano
-            t1 = threading.Thread(target=ReadNano, args=(package,)) # Create a thread for nano
-            t1.start()  # Start the thread
-            print(package.get())
-            print("\n")
-            print(landmarks[mp_pose.PoseLandmark.RIGHT_WRIST].x)
-            print("\n")
-            
-            
-            
+            wristXTemp =landmarks[mp_pose.PoseLandmark.RIGHT_WRIST].x
+            wristYTemp =landmarks[mp_pose.PoseLandmark.RIGHT_WRIST].y
+            elbowXTemp =landmarks[mp_pose.PoseLandmark.RIGHT_ELBOW].x
+            elbowYTemp =landmarks[mp_pose.PoseLandmark.RIGHT_ELBOW].y
+            shoulderXTemp =landmarks[mp_pose.PoseLandmark.RIGHT_SHOULDER].x
+            shoulderYTemp =landmarks[mp_pose.PoseLandmark.RIGHT_SHOULDER].y
+            wristX.put(wristXTemp)
+            wristY.put(wristYTemp)
+            elbowX.put(elbowXTemp)
+            elbowY.put(elbowYTemp)
+            shoulderX.put(shoulderXTemp)
+            shoulderY.put(shoulderYTemp)
             #Draw joints
             mp_drawing.draw_landmarks(image, results.pose_landmarks, mp_pose.POSE_CONNECTIONS)
-            
+            time.sleep(1)
             cv2.imshow('Mediapipe Feed', image) # Display image
             if cv2.waitKey(10) & 0xFF == ord('q'): # If q key is pressed
                 break
         cap.release() # Release control of camera
         cv2.destroyAllWindows() # Destroy all windows
 
+
+# Create queues to store values
+package = queue.Queue()
+wristX = queue.Queue()
+wristY = queue.Queue()
+elbowX = queue.Queue()
+elbowY = queue.Queue()
+shoulderX = queue.Queue()
+shoulderY = queue.Queue()
+t1 = threading.Thread(target=ReadNano, args=(package,)) # Create a thread for nano
+t1.start()
+t2 = threading.Thread(target=OpenCV, args=(wristX,wristY,elbowX,elbowY,shoulderX,shoulderY,)) # Create a thread for OpenCV
+t2.start()            
+
+while True:
+    #Create message to send to Uno
+    total = f"{wristX.get():6.2f} {wristY.get():6.2f} {elbowX.get():6.2f} {elbowY.get():6.2f} {shoulderX.get():6.2f} {shoulderY.get():6.2f} " + package.get()
+    
+    #Print message to console
+    print(total)
+    
+    #Send message to Uno
+    uno.write(total.encode())

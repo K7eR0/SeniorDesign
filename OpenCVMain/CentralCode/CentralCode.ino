@@ -1,8 +1,9 @@
 #include <ArduinoBLE.h>
 #include <Arduino.h>
+#include <Wire.h>
 
 void setup() {
-  Serial.begin(2000000);
+  Serial.begin(500000);
   while (!Serial)
     ;
 
