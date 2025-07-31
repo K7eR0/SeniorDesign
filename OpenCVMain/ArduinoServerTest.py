@@ -70,7 +70,6 @@ def OpenCV(wristX,wristY,elbowX,elbowY,shoulderX,shoulderY):
             shoulderY.put(shoulderYTemp)
             #Draw joints
             mp_drawing.draw_landmarks(image, results.pose_landmarks, mp_pose.POSE_CONNECTIONS)
-            time.sleep(1)
             cv2.imshow('Mediapipe Feed', image) # Display image
             if cv2.waitKey(10) & 0xFF == ord('q'): # If q key is pressed
                 break
@@ -86,12 +85,20 @@ elbowX = queue.Queue()
 elbowY = queue.Queue()
 shoulderX = queue.Queue()
 shoulderY = queue.Queue()
+
 t1 = threading.Thread(target=ReadNano, args=(package,)) # Create a thread for nano
 t1.start()
 t2 = threading.Thread(target=OpenCV, args=(wristX,wristY,elbowX,elbowY,shoulderX,shoulderY,)) # Create a thread for OpenCV
 t2.start()            
 
 while True:
+    package.queue.clear()
+    wristX.queue.clear()
+    wristY.queue.clear()
+    elbowX.queue.clear()
+    elbowY.queue.clear()
+    shoulderX.queue.clear()
+    shoulderY.queue.clear()
     #Create message to send to Uno
     total = f"{wristX.get():6.2f} {wristY.get():6.2f} {elbowX.get():6.2f} {elbowY.get():6.2f} {shoulderX.get():6.2f} {shoulderY.get():6.2f} " + package.get()
     
@@ -100,3 +107,4 @@ while True:
     
     #Send message to Uno
     uno.write(total.encode())
+    time.sleep(0.1)

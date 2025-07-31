@@ -12,15 +12,13 @@ BLEStringCharacteristic IMUSensorData("2A19", BLERead | BLENotify, 512);  //Set 
 // Setup filter
 Madgwick filter;
 
-// Sensor Measurements:
-float xa, ya, za;  //Accelerometer in m/s^2
-float xg, yg, zg;  //Gyro in rad/s
-float xm, ym, zm;  //Mag in uT
-const unsigned long updateInterval = 1000000;
+const float sensorRate = 100.0f;
+const unsigned long updateInterval = 1000000 / sensorRate;
 unsigned long lastUpdateTime = 0;
 
-// Ouputs
-float roll = 0, pitch = 0, yaw = 0;  //Roll Pitch Yaw
+// Global variables to store the gyroscope bias
+float gBiasX = 0, gBiasY = 0, gBiasZ = 0;
+float roll = 0, pitch = 0, yaw = 0;
 
 // Button and Sensors
 #define Calibration 4  //Setup for Calibration button
@@ -37,6 +35,42 @@ void setup() {
     while (1)
       ;
   }
+  // --- IMPORTANT: GYROSCOPE CALIBRATION ---
+  Serial.println("Calibrating gyroscope... Keep board perfectly still!");
+  const int numSamples = 500;
+  float gx_sum = 0, gy_sum = 0, gz_sum = 0;
+
+  for (int i = 0; i < numSamples; i++) {
+    float gx, gy, gz;
+    // Wait for sensor data to be available
+    while (!IMU.gyroscopeAvailable()) {}
+    IMU.readGyroscope(gx, gy, gz);
+    gx_sum += gx;
+    gy_sum += gy;
+    gz_sum += gz;
+    delay(3);  // A small delay between readings
+  }
+
+  // Calculate the average bias
+  gBiasX = gx_sum / numSamples;
+  gBiasY = gy_sum / numSamples;
+  gBiasZ = gz_sum / numSamples;
+
+  Serial.println("Calibration complete.");
+  Serial.print("Gyro Bias -> X: ");
+  Serial.print(gBiasX);
+  Serial.print(", Y: ");
+  Serial.print(gBiasY);
+  Serial.print(", Z: ");
+  Serial.println(gBiasZ);
+  Serial.println();
+
+  filter.begin(sensorRate);
+  lastUpdateTime = micros();
+
+  Serial.println("Pitch(deg), Roll(deg), Yaw(deg)");
+  Serial.println("------------------------------------");
+
   if (!BLE.begin()) {
     Serial.println("Failed to initialize BLE");  //Shows if BLE module failed to activate
     while (1)
@@ -54,7 +88,6 @@ void setup() {
   Serial.print("Waiting for connections, address is: ");
   Serial.println(address);
 
-  filter.begin(60);  //Start filter with a sample rate of 60Hz
 
   delay(1000);
 }
@@ -75,15 +108,28 @@ void loop() {
       String package;   //Create a buffer to store the whole string
       char buffer[10];  //Create a buffer to store the individual strings
                         // Setup time int since last loop
-      if ((micros() - lastUpdateTime) >= updateInterval/IMU.accelerationSampleRate()) {
+      if ((micros() - lastUpdateTime) >= updateInterval) {
         lastUpdateTime = micros();
 
-        IMU.readAcceleration(xa, ya, za);
-        IMU.readGyroscope(xg, yg, zg);
-        IMU.readMagneticField(xm, ym, zm);
+        float ax, ay, az, gx, gy, gz, mx, my, mz;
 
-        // Perform sensor fusion using the filter
-        filter.update(xg, yg, zg, xa, ya, za, xm, ym, zm);
+        // Read all sensor data
+        IMU.readAcceleration(ax, ay, az);
+        IMU.readGyroscope(gx, gy, gz);
+        IMU.readMagneticField(mx, my, mz);
+
+        // --- Apply Gyroscope Bias Correction ---
+        gx -= gBiasX;
+        gy -= gBiasY;
+        gz -= gBiasZ;
+
+        // Apply your manual magnetometer offsets here if needed
+        mx = mx - (-59.5);
+        my = my - (-3.0);
+        mz = mz - (26.0);
+
+        // Update the filter with the corrected data
+        filter.update(-gx, -gy, -gz, ax, ay, az, my, -mx, -mz);
 
         // Get orientation estimates in terms of pitch, yaw, and roll
         roll = filter.getRoll();
@@ -96,6 +142,7 @@ void loop() {
         snprintf(buffer, sizeof(buffer), "%7.2f", yaw);
         package += buffer;
         IMUSensorData.writeValue(package);  //Send data to central
+        delay(25);
         Serial.println(package);
       }
     }

@@ -1,3 +1,4 @@
+#include <Wire.h>
 String x;
 float step = 0;
 #define LED 13
@@ -18,7 +19,6 @@ void loop() {
   digitalWrite(LEDSERIAL,LOW);
   x = Serial.readString();
   step = x.substring(0, 6).toFloat();
-  Serial.print(step);
   if (step >= .5) {
     digitalWrite(LED,HIGH);
   }if(step < .5){
