@@ -6,7 +6,7 @@ import mediapipe as mp
 import numpy as np
 import queue
 
-uno = serial.Serial(port='COM12',   baudrate=500000 , timeout=0.02) # Start Serial connection with Uno
+#uno = serial.Serial(port='COM12',   baudrate=500000 , timeout=0.02) # Start Serial connection with Uno
 nano = serial.Serial(port='COM3',   baudrate=500000 , timeout=0.02) # Start Serial connection with Nano
 
 def ReadNano(package): # Function to receive and process coordinates from nano
@@ -106,5 +106,5 @@ while True:
     print(total)
     
     #Send message to Uno
-    uno.write(total.encode())
+    #uno.write(total.encode())
     time.sleep(0.1)

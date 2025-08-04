@@ -20,12 +20,21 @@ unsigned long lastUpdateTime = 0;
 float gBiasX = 0, gBiasY = 0, gBiasZ = 0;
 float roll = 0, pitch = 0, yaw = 0;
 
-// Button and Sensors
-#define Calibration 4  //Setup for Calibration button
+// Touch Sensors
+const int Sensor1 = 2;
+const int Sensor2 = 3;
+const int Sensor3 = 4;
+int State1;
+int State2;
+int State3;
+int OpenClosed;
 
 void setup() {
   pinMode(Calibration, INPUT);
   Serial.begin(9600);
+  pinMode(Sensor1, INPUT);
+  pinMode(Sensor2, INPUT);
+  pinMode(Sensor3, INPUT);
   while (!Serial)
     ;
 
@@ -98,13 +107,15 @@ void loop() {
   if (central) {
     Serial.println(central.address());
     while (central.connected()) {
-      // Calibrate the system once
-      // while(Calib = 0){
-      //   if (digitalRead(Calibration) == HIGH){
-      //     Calib = 1;
-      //   }
-      // }
 
+      State1 = digitalRead(Sensor1);
+      State2 = digitalRead(Sensor2);
+      State3 = digitalRead(Sensor3);
+      if (State1 == HIGH||State2==HIGH||State3==HIGH){
+        OpenClose = 1;
+      }else{
+        OpenClose = 0;
+      }
       String package;   //Create a buffer to store the whole string
       char buffer[10];  //Create a buffer to store the individual strings
                         // Setup time int since last loop
@@ -141,6 +152,8 @@ void loop() {
         package += buffer;
         snprintf(buffer, sizeof(buffer), "%7.2f", yaw);
         package += buffer;
+        package += " ";
+        package += String(OpenClose);
         IMUSensorData.writeValue(package);  //Send data to central
         delay(25);
         Serial.println(package);
