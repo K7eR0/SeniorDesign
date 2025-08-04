@@ -5,16 +5,31 @@ import cv2
 import mediapipe as mp
 import numpy as np
 import queue
+import websocket
+import json
 
 #uno = serial.Serial(port='COM12',   baudrate=500000 , timeout=0.02) # Start Serial connection with Uno
 nano = serial.Serial(port='COM3',   baudrate=500000 , timeout=0.02) # Start Serial connection with Nano
+def on_message(ws, message):
+    values = json.loads(message)['values']
+    Sensor.put(values) 
 
+def on_error(ws, error):
+    print("error occurred ", error)
+    
+def on_close(ws, close_code, reason):
+    print("connection closed : ", reason)
+
+def on_open(ws):
+    print("connected")
+    
+ 
 def ReadNano(package): # Function to receive and process coordinates from nano
     while True:
         try:
             # Read line, decode, and strip newlines
             raw_data = nano.readline()
-            if raw_data: # Only process if data was received
+            if raw_data: # Only process if data was received/
                 decoded_data = raw_data.decode('utf-8').strip()
                 if decoded_data: # Only put valid, non-empty data into the queue
                     package.put(decoded_data)
@@ -85,12 +100,16 @@ elbowX = queue.Queue()
 elbowY = queue.Queue()
 shoulderX = queue.Queue()
 shoulderY = queue.Queue()
-
+Sensor = queue.Queue()
+url = "ws://172.19.67.42:8080/sensor/connect?type=android.sensor.orientation"
 t1 = threading.Thread(target=ReadNano, args=(package,)) # Create a thread for nano
 t1.start()
 t2 = threading.Thread(target=OpenCV, args=(wristX,wristY,elbowX,elbowY,shoulderX,shoulderY,)) # Create a thread for OpenCV
 t2.start()            
-
+ws = websocket.WebSocketApp(url, on_open=on_open, on_message=on_message, on_error=on_error, on_close=on_close)
+wst = threading.Thread(target=ws.run_forever)
+wst.daemon = True
+wst.start()
 while True:
     package.queue.clear()
     wristX.queue.clear()
@@ -99,12 +118,13 @@ while True:
     elbowY.queue.clear()
     shoulderX.queue.clear()
     shoulderY.queue.clear()
+    Sensor.queue.clear()
     #Create message to send to Uno
-    total = f"{wristX.get():6.2f} {wristY.get():6.2f} {elbowX.get():6.2f} {elbowY.get():6.2f} {shoulderX.get():6.2f} {shoulderY.get():6.2f} " + package.get()
+    total = f"{wristX.get():6.2f} {wristY.get():6.2f} {elbowX.get():6.2f} {elbowY.get():6.2f} {shoulderX.get():6.2f} {shoulderY.get():6.2f} " + package.get() + " " + str(Sensor.get())
     
     #Print message to console
     print(total)
     
     #Send message to Uno
     #uno.write(total.encode())
-    time.sleep(0.1)
+    time.sleep(0.05)

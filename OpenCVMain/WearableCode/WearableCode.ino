@@ -30,7 +30,6 @@ int State3;
 int OpenClosed;
 
 void setup() {
-  pinMode(Calibration, INPUT);
   Serial.begin(9600);
   pinMode(Sensor1, INPUT);
   pinMode(Sensor2, INPUT);
@@ -112,9 +111,9 @@ void loop() {
       State2 = digitalRead(Sensor2);
       State3 = digitalRead(Sensor3);
       if (State1 == HIGH||State2==HIGH||State3==HIGH){
-        OpenClose = 1;
+        OpenClosed = 1;
       }else{
-        OpenClose = 0;
+        OpenClosed = 0;
       }
       String package;   //Create a buffer to store the whole string
       char buffer[10];  //Create a buffer to store the individual strings
@@ -146,14 +145,14 @@ void loop() {
         roll = filter.getRoll();
         pitch = filter.getPitch();
         yaw = filter.getYaw();
-        snprintf(buffer, sizeof(buffer), "%8.2f", roll);
-        package += buffer;
-        snprintf(buffer, sizeof(buffer), "%7.2f", pitch);
-        package += buffer;
-        snprintf(buffer, sizeof(buffer), "%7.2f", yaw);
-        package += buffer;
+        // snprintf(buffer, sizeof(buffer), "%8.2f", roll);
+        // package += buffer;
+        // snprintf(buffer, sizeof(buffer), "%7.2f", pitch);
+        // package += buffer;
+        // snprintf(buffer, sizeof(buffer), "%7.2f", yaw);
+        // package += buffer;
         package += " ";
-        package += String(OpenClose);
+        package += String(OpenClosed);
         IMUSensorData.writeValue(package);  //Send data to central
         delay(25);
         Serial.println(package);
