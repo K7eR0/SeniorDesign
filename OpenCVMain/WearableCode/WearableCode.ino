@@ -22,18 +22,12 @@ float roll = 0, pitch = 0, yaw = 0;
 
 // Touch Sensors
 const int Sensor1 = 2;
-const int Sensor2 = 3;
-const int Sensor3 = 4;
 int State1;
-int State2;
-int State3;
 int OpenClosed;
 
 void setup() {
   Serial.begin(9600);
   pinMode(Sensor1, INPUT);
-  pinMode(Sensor2, INPUT);
-  pinMode(Sensor3, INPUT);
   while (!Serial)
     ;
 
@@ -108,9 +102,7 @@ void loop() {
     while (central.connected()) {
 
       State1 = digitalRead(Sensor1);
-      State2 = digitalRead(Sensor2);
-      State3 = digitalRead(Sensor3);
-      if (State1 == HIGH||State2==HIGH||State3==HIGH){
+      if (State1 == HIGH){
         OpenClosed = 1;
       }else{
         OpenClosed = 0;

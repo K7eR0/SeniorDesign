@@ -120,7 +120,7 @@ while True:
     shoulderY.queue.clear()
     Sensor.queue.clear()
     #Create message to send to Uno
-    total = f"{wristX.get():6.2f} {wristY.get():6.2f} {elbowX.get():6.2f} {elbowY.get():6.2f} {shoulderX.get():6.2f} {shoulderY.get():6.2f} " + package.get() + " " + str(Sensor.get())
+    total = f"{shoulderX.get():6.2f} {shoulderY.get():6.2f} {elbowX.get():6.2f} {elbowY.get():6.2f} {wristX.get():6.2f} {wristY.get():6.2f} " + package.get() + " " + str(Sensor.get())
     
     #Print message to console
     print(total)
