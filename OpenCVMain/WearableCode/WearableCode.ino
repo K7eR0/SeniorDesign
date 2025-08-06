@@ -22,21 +22,12 @@ float roll = 0, pitch = 0, yaw = 0;
 
 // Touch Sensors
 const int Sensor1 = 2;
-const int Sensor2 = 3;
-const int Sensor3 = 4;
 int State1;
-int State2;
-int State3;
 int OpenClosed;
 
 void setup() {
-  pinMode(Calibration, INPUT);
   Serial.begin(9600);
   pinMode(Sensor1, INPUT);
-  pinMode(Sensor2, INPUT);
-  pinMode(Sensor3, INPUT);
-  while (!Serial)
-    ;
 
   if (!IMU.begin()) {
     Serial.println("Failed to initialize IMU!");  //Shows if IMU module failed to activate
@@ -109,12 +100,10 @@ void loop() {
     while (central.connected()) {
 
       State1 = digitalRead(Sensor1);
-      State2 = digitalRead(Sensor2);
-      State3 = digitalRead(Sensor3);
-      if (State1 == HIGH||State2==HIGH||State3==HIGH){
-        OpenClose = 1;
+      if (State1 == HIGH){
+        OpenClosed = 1;
       }else{
-        OpenClose = 0;
+        OpenClosed = 0;
       }
       String package;   //Create a buffer to store the whole string
       char buffer[10];  //Create a buffer to store the individual strings
@@ -135,9 +124,9 @@ void loop() {
         gz -= gBiasZ;
 
         // Apply your manual magnetometer offsets here if needed
-        mx = mx - (-59.5);
-        my = my - (-3.0);
-        mz = mz - (26.0);
+        mx = mx - (-28.5);
+        my = my - (-8.0);
+        mz = mz - (7.0);
 
         // Update the filter with the corrected data
         filter.update(-gx, -gy, -gz, ax, ay, az, my, -mx, -mz);
@@ -153,7 +142,7 @@ void loop() {
         snprintf(buffer, sizeof(buffer), "%7.2f", yaw);
         package += buffer;
         package += " ";
-        package += String(OpenClose);
+        package += String(OpenClosed);
         IMUSensorData.writeValue(package);  //Send data to central
         delay(25);
         Serial.println(package);

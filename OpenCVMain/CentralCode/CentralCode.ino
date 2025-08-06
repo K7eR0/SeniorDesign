@@ -4,8 +4,7 @@
 const int trigPin = 9;
 const int echoPin = 10;
 float duration, distance;
-void setup()
-{
+void setup() {
   pinMode(trigPin, OUTPUT);
   pinMode(echoPin, INPUT);
   Serial.begin(500000);
@@ -13,8 +12,7 @@ void setup()
     ;
 
   // begin initialization
-  if (!BLE.begin())
-  {
+  if (!BLE.begin()) {
     Serial.println("starting Bluetooth® Low Energy module failed!");
 
     while (1)
@@ -27,13 +25,11 @@ void setup()
   BLE.scan();
 }
 
-void loop()
-{
+void loop() {
   // check if a peripheral has been discovered
   BLEDevice peripheral = BLE.available();
 
-  if (peripheral)
-  {
+  if (peripheral) {
     // discovered a peripheral
     Serial.println("Discovered a peripheral");
     Serial.println("-----------------------");
@@ -43,18 +39,15 @@ void loop()
     Serial.println(peripheral.address());
 
     // print the local name, if present
-    if (peripheral.hasLocalName())
-    {
+    if (peripheral.hasLocalName()) {
       Serial.print("Local Name: ");
       Serial.println(peripheral.localName());
     }
 
     // print the advertised service UUIDs, if present
-    if (peripheral.hasAdvertisedServiceUuid())
-    {
+    if (peripheral.hasAdvertisedServiceUuid()) {
       Serial.print("Service UUIDs: ");
-      for (int i = 0; i < peripheral.advertisedServiceUuidCount(); i++)
-      {
+      for (int i = 0; i < peripheral.advertisedServiceUuidCount(); i++) {
         Serial.print(peripheral.advertisedServiceUuid(i));
         Serial.print(" ");
       }
@@ -67,8 +60,7 @@ void loop()
 
     Serial.println();
 
-    if (peripheral.localName() != "IMUWearable")
-    {
+    if (peripheral.localName() != "IMUWearable") {
       return;
     }
     BLE.stopScan();
@@ -77,27 +69,20 @@ void loop()
   }
 }
 
-void monitorBLEperipheral(BLEDevice peripheral)
-{
+void monitorBLEperipheral(BLEDevice peripheral) {
   Serial.println("Connecting ...");
-  if (peripheral.connect())
-  {
+  if (peripheral.connect()) {
     Serial.println("Connected");
-  }
-  else
-  {
+  } else {
     Serial.println("Failed to connect!");
     return;
   }
 
   // discover peripheral attributes
   Serial.println("Discovering service 0xffe0 ...");
-  if (peripheral.discoverService("180F"))
-  {
+  if (peripheral.discoverService("180F")) {
     Serial.println("Service discovered");
-  }
-  else
-  {
+  } else {
     Serial.println("Attribute discovery failed.");
     peripheral.disconnect();
 
@@ -108,38 +93,29 @@ void monitorBLEperipheral(BLEDevice peripheral)
 
   // retrieve the IMUSensorData characteristic
   BLECharacteristic IMUSensorData = peripheral.characteristic("2A19");
- 
+
   // subscribe to the simple key characteristic
   Serial.println("Subscribing to IMUSensorData characteristic ...");
-  if (!IMUSensorData)
-  {
+  if (!IMUSensorData) {
     Serial.println("no IMUSensorData characteristic found!");
     peripheral.disconnect();
     return;
-  }
-  else if (!IMUSensorData.canSubscribe())
-  {
+  } else if (!IMUSensorData.canSubscribe()) {
     Serial.println("IMUSensorData characteristic is not subscribable!");
     peripheral.disconnect();
     return;
-  }
-  else if (!IMUSensorData.subscribe())
-  {
+  } else if (!IMUSensorData.subscribe()) {
     Serial.println("subscription failed!");
     peripheral.disconnect();
     return;
-  }
-  else
-  {
+  } else {
     Serial.println("Subscribed to IMUSensorData characteristic");
   }
 
-  while (peripheral.connected())
-  {
+  while (peripheral.connected()) {
 
     // Look for an update on the IMUSensorData characteristic
-    if (IMUSensorData.valueUpdated())
-    {
+    if (IMUSensorData.valueUpdated()) {
       // Get distance from ultrasonic sensor
       digitalWrite(trigPin, LOW);
       delayMicroseconds(2);
@@ -155,12 +131,32 @@ void monitorBLEperipheral(BLEDevice peripheral)
       int length = IMUSensorData.valueLength();
       const uint8_t *val = IMUSensorData.value();
       str.reserve(length);
-
-      for (int i = 0; i < length; i++)
-      {
-        str += (char)val[i];
+      char buffer[10];
+      String buffer2;
+      for (int i = 0; i < 8; i++) {
+        buffer2 += (char)val[i];
       }
-      str += " " + String(distance);
+      snprintf(buffer, sizeof(buffer), "%8.2f", buffer2);
+      str += buffer2;
+      buffer2 = "";
+
+      for (int i = 8; i < 15; i++) {
+        buffer2 += (char)val[i];
+      }
+      snprintf(buffer, sizeof(buffer), "%7.2f", buffer2);
+      str += buffer2;
+
+      buffer2 = "";
+      for (int i = 14; i < 21; i++) {
+        buffer2 += (char)val[i];
+      }
+      snprintf(buffer, sizeof(buffer), "%7.2f", buffer2);
+      str += buffer2;
+      str += " ";
+      str += (char)val[23];
+
+      snprintf(buffer, sizeof(buffer), "%6.2f", distance);
+      str += " " + String(buffer);
       Serial.println(str);
       delay(25);
     }

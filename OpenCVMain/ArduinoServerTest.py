@@ -107,4 +107,4 @@ while True:
     
     #Send message to Uno
     #uno.write(total.encode())
-    time.sleep(0.1)
+    time.sleep(0.05)
