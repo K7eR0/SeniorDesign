@@ -124,9 +124,9 @@ void loop() {
         gz -= gBiasZ;
 
         // Apply your manual magnetometer offsets here if needed
-        mx = mx - (-28.5);
-        my = my - (-8.0);
-        mz = mz - (7.0);
+        mx = mx - (-11.5);
+        my = my - (-0.5);
+        mz = mz - (7.50);
 
         // Update the filter with the corrected data
         filter.update(-gx, -gy, -gz, ax, ay, az, my, -mx, -mz);
@@ -144,7 +144,6 @@ void loop() {
         package += " ";
         package += String(OpenClosed);
         IMUSensorData.writeValue(package);  //Send data to central
-        delay(25);
         Serial.println(package);
       }
     }

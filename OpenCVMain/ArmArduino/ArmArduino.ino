@@ -1,57 +1,90 @@
 //Senior Design Caprstone - Robotic Arm Manipulator Code
 //Dylan Cadigan & Robert Nguyen
 
-//Including Required Libraries
-#include <Arduino.h>
-#include <AccelStepper.h>
-#include <MultiStepper.h>
-
-//String from the serial communication
+#include <Servo.h>
+#include <Wire.h>
 String x;
+float step = 0;
+#define LED 13
+#define LEDSERIAL 2
+float old_pos = 0;
+float current_pos = 90;
+int n = 0;
+int claw = 0;
 
-//--------------------------------------------------------------------
-//Base Stepper Motor
-// Define stepper motor connections and motor interface type. Motor interface type must be set to 1 when using a driver:
-#define dirPin 2
-#define stepPin 3
-#define motorInterfaceType 1
+Servo myservo;  // create Servo object to control a servo
+// twelve Servo objects can be created on most boards
 
-// Create a new instance of the AccelStepper class:
-AccelStepper stepper1 = AccelStepper(motorInterfaceType, stepPin, dirPin);
-//--------------------------------------------------------------------
+Servo wrist;
 
-float base_value = 0;
+int pos = 0;    // variable to store the servo position
+
 
 
 void setup() {
-  Serial.begin(115200); //Start a serial connection with baud rate of 115200
-  Serial.setTimeout(1.5); //Timeout the conenction after 1.5 seconds
- 
- //Setting Base Stepper Motor Parameters
-  stepper1.setMaxSpeed(90);
-  stepper1.setAcceleration(20);
+  pinMode(LED, OUTPUT);
+  pinMode(LEDSERIAL, OUTPUT);
+  Serial.begin(500000);
+  Serial.setTimeout(20);
+
+  myservo.attach(9);  // attaches the servo on pin 9 to the Servo object
+  wrist.attach(10);
 }
 
 void loop() {
   // put your main code here, to run repeatedly:
-  //while (!Serial.available());
-  //x = Serial.readString();
-  x = String("  0.02   1.23   0.10   0.88   0.35   0.53 142.60  -4.62 167.85 412.30");
-  base_value = x.substring(27, 34).toFloat();
- // stepper1.moveTo(step);
- // stepper1.runToPosition();
-  //Serial.print(step);
 
-  // Map the smoothed potentiometer value (0 to 1) to a target position (0 to 200):
-  int position = map(base_value, 0, 1, 0, 200);
-//int position = base_value*200;
- // Set the target position:
-  stepper1.moveTo(position);
-  //Serial.print(position);
-  Serial.print(base_value);
-  delay(100);
-    //stepper1.moveTo(0.3);
+  while (!Serial.available()){
+    digitalWrite(LEDSERIAL,HIGH);
+  }
+  digitalWrite(LEDSERIAL,LOW);
+  x = Serial.readString();
+  step = x.substring(41, 50).toFloat();
+  
+ // Map the smoothed potentiometer value (0 to 1023) to a target position (0 to 200):
+  //int pos = map(step, -50, 120, 0, 180);
+  
+  if (n == 0){
+    old_pos = step;
 
-  // Run to target position with set speed and acceleration/deceleration:
-  stepper1.runToPosition();
+    n++; 
+  }
+
+  current_pos = current_pos-1.25*(step-old_pos);
+  
+  wrist.write(current_pos);              // tell servo to go to position in variable 'pos'
+  //delay(10);        
+  
+  old_pos = step;
+  n = n+1;
+
+  Serial.print(step);
+  Serial.print(x.substring(40, 48));
+
+
+  claw = x.substring(65).toFloat();
+ 
+ if (claw == 0){
+  //for (pos = 0; pos <= 90; pos += 1) { // goes from 0 degrees to 180 degrees
+    // in steps of 1 degree
+    myservo.write(0);              // tell servo to go to position in variable 'pos'
+    //delay(15);                       // waits 15 ms for the servo to reach the position
+ // }
+  }
+
+  if (claw == 1){
+     //for (pos = 90; pos >= 0; pos -= 1) { // goes from 180 degrees to 0 degrees
+    myservo.write(90);              // tell servo to go to position in variable 'pos'
+    //delay(15);                       // waits 15 ms for the servo to reach the position
+  //}
+  }
+ 
+
+
+ 
+
+
+
+  
+
 }

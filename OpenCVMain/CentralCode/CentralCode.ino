@@ -158,7 +158,7 @@ void monitorBLEperipheral(BLEDevice peripheral) {
       snprintf(buffer, sizeof(buffer), "%6.2f", distance);
       str += " " + String(buffer);
       Serial.println(str);
-      delay(25);
+      delay(10);
     }
   }
 
